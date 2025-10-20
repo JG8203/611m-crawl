@@ -4,6 +4,7 @@ from collections import deque
 from urllib.parse import urljoin, urldefrag, urlparse, urlunparse
 from DrissionPage import ChromiumPage
 import networkx as nx
+import re
 
 class Node:
     def __init__(
@@ -66,9 +67,15 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
         try:
             browser.get(node.link, timeout=3)
             a_elements: List[object] = browser.eles("tag:a")
+            
+            #✅ Extract emails from the page
+            emails = extract_emails(browser, node.link)
+            print(f"  Emails found: {', '.join(emails) if emails else 'None'}")
+            
         except Exception as e:
             print(f"Failed to extract links from {node.link}: {e}")
             continue
+        
 
         neighbors: List[Node] = []
         for a in a_elements:
@@ -101,6 +108,23 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
 
     return visited_links
 
+def extract_emails(page: ChromiumPage, current_url: str) -> List[str]:
+    """Extract email addresses from the given text."""
+    
+    try:
+        html = page.html
+    except Exception as e:
+        print(f"Failed to get page source from {current_url}: {e}")
+        return []
+    
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    emails = re.findall(email_pattern, html)
+    emails=list(set(emails))
+    
+    if emails:
+        print(f"  Found emails on {current_url}: {', '.join(emails)}")
+        
+    return emails
 
 def main(url: str) -> List[str]:
     root = Node(url)
@@ -110,6 +134,19 @@ def main(url: str) -> List[str]:
 
 
 if __name__ == "__main__":
+    
+    #--------------------------
+    # Ask user for input
+    #--------------------------
+    #url = input("Enter the starting URL (default: http://www.dlsu.edu.ph): ")
+    #duration = input("Enter duration in minutes (default: 60): ")
+    #num_threads = input("Enter number of threads (default: 4): ")
+    
+    #print(f"Starting crawl with URL: {url or 'http://www.dlsu.edu.ph'}, Duration: {duration or '60'} minutes, Threads: {num_threads or '4'}\n")
+    
+    
+    
+    
     links = main("http://www.dlsu.edu.ph")
     print("\nVisited links:")
     for link in links:
