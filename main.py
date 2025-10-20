@@ -69,8 +69,13 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
             a_elements: List[object] = browser.eles("tag:a")
             
             #✅ Extract emails from the page
-            emails = extract_emails(browser, node.link)
-            print(f"  Emails found: {', '.join(emails) if emails else 'None'}")
+            #emails = extract_emails(browser, node.link)
+            emails_by_affiliation(browser, node.link)
+            
+            #Debug print emails found
+            #print(f"  Emails found: {', '.join(emails) if emails else 'None'}")
+            
+            # TODO:Append emails to a file
             
         except Exception as e:
             print(f"Failed to extract links from {node.link}: {e}")
@@ -126,6 +131,25 @@ def extract_emails(page: ChromiumPage, current_url: str) -> List[str]:
         
     return emails
 
+def url_affiliation(url: str) -> str:
+    parsed = urlparse(url)
+    path = parsed.path.strip("/")
+    if not path:
+        return "homepage"
+    
+    parts = path.split("/")
+    
+    # Affiliation based on path
+    return parts[0] # e.g., 'academics', 'admissions', etc.
+
+def emails_by_affiliation(page, url: str):
+    emails = extract_emails(page, url)
+    affiliation = url_affiliation(url)
+    
+    print(f"  Affiliation for {url}: {affiliation}")
+    
+    return [{"email": e, "url": url, "affiliation": affiliation} for e in set(emails)]
+
 def main(url: str) -> List[str]:
     root = Node(url)
     visited_links = bfs(root)
@@ -143,8 +167,6 @@ if __name__ == "__main__":
     #num_threads = input("Enter number of threads (default: 4): ")
     
     #print(f"Starting crawl with URL: {url or 'http://www.dlsu.edu.ph'}, Duration: {duration or '60'} minutes, Threads: {num_threads or '4'}\n")
-    
-    
     
     
     links = main("http://www.dlsu.edu.ph")
