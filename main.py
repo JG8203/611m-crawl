@@ -41,7 +41,7 @@ class Node:
         return f"Node({self.link!r})"
 
 
-def bfs(start: Node, max_pages: int = 5000) -> List[str]:
+def bfs(start: Node, max_pages: int = 100) -> List[str]:
     visited: Set[str] = set()
     queue: Deque[Node] = deque([start])
     pages_crawled = 0
@@ -49,6 +49,9 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
 
     # Create a directed graph
     G = nx.DiGraph()
+    
+    # Emails and Affiliations storage
+    all_emails_affiliations: List[dict] = []
 
     browser = ChromiumPage()
 
@@ -68,15 +71,8 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
             browser.get(node.link, timeout=3)
             a_elements: List[object] = browser.eles("tag:a")
             
-            #✅ Extract emails from the page
-            #emails = extract_emails(browser, node.link)
-            emails_by_affiliation(browser, node.link)
-            
-            #Debug print emails found
-            #print(f"  Emails found: {', '.join(emails) if emails else 'None'}")
-            
-            # TODO:Append emails to a file
-            
+            emails_affiliations = emails_by_affiliation(browser, node.link)
+            all_emails_affiliations.extend(emails_affiliations)
         except Exception as e:
             print(f"Failed to extract links from {node.link}: {e}")
             continue
@@ -110,8 +106,18 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
     # ✅ Save graph to GraphML
     nx.write_graphml(G, "dlsu_crawl.graphml")
     print("\n✅ Graph saved as 'dlsu_crawl.graphml'")
+    
+    # Save emails and affiliations to text file
+    write_to_file(all_emails_affiliations)
 
     return visited_links
+
+def write_to_file(data: List[dict], filename: str = "emails_affiliations.txt") -> None:
+    """Write emails and their affiliations to a text file."""
+    with open(filename, "w") as f:
+        for entry in data:
+            f.write(f"Email: {entry['email']}, URL: {entry['url']}, Affiliation: {entry['affiliation']}\n")
+            
 
 def extract_emails(page: ChromiumPage, current_url: str) -> List[str]:
     """Extract email addresses from the given text."""
@@ -146,7 +152,8 @@ def emails_by_affiliation(page, url: str):
     emails = extract_emails(page, url)
     affiliation = url_affiliation(url)
     
-    print(f"  Affiliation for {url}: {affiliation}")
+    if emails:
+        print(f"  Affiliation for {emails}: {affiliation}")
     
     return [{"email": e, "url": url, "affiliation": affiliation} for e in set(emails)]
 
