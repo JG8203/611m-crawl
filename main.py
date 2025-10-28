@@ -41,7 +41,7 @@ class Node:
         return f"Node({self.link!r})"
 
 
-def bfs(start: Node, max_pages: int = 100) -> List[str]:
+def bfs(start: Node, max_pages: int = 5000) -> List[str]:
     visited: Set[str] = set()
     queue: Deque[Node] = deque([start])
     pages_crawled = 0
