@@ -13,6 +13,9 @@ def write_metadata_to_csv(results, filename="metadata_results.csv"):
         writer.writeheader()
         writer.writerows(results)
 
+# TODO: Write no. of pages crawled, no. visited links, and all visited urls to text file
+
+
 def main():
     
     #Define the website to be scraped
@@ -28,7 +31,7 @@ def main():
     #TODO: Get user input for duration and max number of threads
     
     #DEBUG: Fixed runtime and threads for testing
-    run_minutes = 3  # Change runtime here
+    run_minutes = 1  # Change runtime here
     num_threads = 4  # Change number of threads here
     
     #Start BFS crawl
@@ -57,6 +60,9 @@ def main():
     #Write metadata results to csv file
     write_metadata_to_csv(results)
     print("✅ Metadata results saved to 'metadata_results.csv'")
+    
+    # TODO: Write to text file
+    
     
 if __name__ == "__main__":
     main()
