@@ -71,8 +71,8 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
             browser.get(node.link, timeout=3)
             a_elements: List[object] = browser.eles("tag:a")
             
-            emails_affiliations = emails_by_affiliation(browser, node.link)
-            all_emails_affiliations.extend(emails_affiliations)
+            #emails_affiliations = emails_by_affiliation(browser, node.link)
+            #all_emails_affiliations.extend(emails_affiliations)
         except Exception as e:
             print(f"Failed to extract links from {node.link}: {e}")
             continue
@@ -108,7 +108,7 @@ def bfs(start: Node, max_pages: int = 5000) -> List[str]:
     print("\n✅ Graph saved as 'dlsu_crawl.graphml'")
     
     # Save emails and affiliations to text file
-    write_to_file(all_emails_affiliations)
+    #write_to_file(all_emails_affiliations)
 
     return visited_links
 
