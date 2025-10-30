@@ -9,7 +9,6 @@ import threading
 def bfs(start: Node, duration: int, queue : Queue, lock: threading.Lock, graph: nx.DiGraph, visited: set):
     #visited = set()
     #queue = deque([start])
-    G = nx.DiGraph()
     visited_links = []
     pages_crawled = 0
     
@@ -50,6 +49,6 @@ def bfs(start: Node, duration: int, queue : Queue, lock: threading.Lock, graph: 
             with lock:
                 if neighbor.link not in visited:
                     queue.put(neighbor)
-                G.add_edge(link, neighbor.link)
+                graph.add_edge(link, neighbor.link)
 
-    return visited_links, G
+    return visited_links, graph

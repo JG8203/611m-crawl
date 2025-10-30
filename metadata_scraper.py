@@ -13,7 +13,11 @@ def metadata_worker(url_queue: Queue, visited: set, lock: threading.Lock, result
     run_time = duration * 60  
     start_time = time.time()
     
-    while time.time < duration:
+    while True:
+        
+        if time.time() - start_time > run_time:
+            print("Time limit reached for metadata worker, stopping.")
+            break
         try:
             node: Node = url_queue.get(timeout=5)
         except Empty:
@@ -29,7 +33,8 @@ def metadata_worker(url_queue: Queue, visited: set, lock: threading.Lock, result
         
         with lock:
             results.append(metadata)
-            print(f"Metadata for {url}: Title - {metadata['title']}, Description - {metadata['meta_description']}")
+            #DEBUG
+            #print(f"Metadata for {url}: Title - {metadata['title']}, Description - {metadata['meta_description']}")
 
 
 # Get page details
@@ -47,7 +52,7 @@ def extract_metadata(url: str) -> Dict[str, str]:
             title = "No Title"
 
         # Extract meta description safely
-        meta_description: str = ""
+        meta_description: str = "None"
         meta_tag: Tag | None = soup.find("meta", attrs={"name": "description"})
         if meta_tag and "content" in meta_tag.attrs:
             meta_description = meta_tag["content"].strip()
@@ -63,5 +68,5 @@ def extract_metadata(url: str) -> Dict[str, str]:
         return {
             "url": url,
             "title": "Error",
-            "meta_description": ""
+            "meta_description": "None"
         }
