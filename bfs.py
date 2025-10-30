@@ -14,14 +14,14 @@ def bfs(start: Node, duration: int, queue : Queue, lock: threading.Lock, graph: 
     pages_crawled = 0
     
     # Handle duration
-    duration = duration * 60  
+    run_time = duration * 60  
     start_time = time.time()
     
     queue.put(start)
 
     while True:
         
-        if time.time() - start_time > duration:
+        if time.time() - start_time > run_time:
             print("Time limit reached, stopping crawl.")
             break
         

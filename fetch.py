@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from node import Node
-from typing import List, Tuple
+from typing import List
 
 
 def fetch_page(node: Node):
