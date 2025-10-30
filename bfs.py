@@ -3,30 +3,39 @@ import time
 import networkx as nx
 from node import Node
 from fetch import fetch_page
+from queue import Queue, Empty
+import threading
 
-def bfs(start: Node, duration: int):
-    visited = set()
-    queue = deque([start])
-    visited_links = []
+def bfs(start: Node, duration: int, queue : Queue, lock: threading.Lock, graph: nx.DiGraph, visited: set):
+    #visited = set()
+    #queue = deque([start])
     G = nx.DiGraph()
+    visited_links = []
     pages_crawled = 0
     
-    # Convert to minutes to seconds
+    # Handle duration
     duration = duration * 60  
     start_time = time.time()
+    
+    queue.put(start)
 
-    while queue:
+    while True:
         
         if time.time() - start_time > duration:
             print("Time limit reached, stopping crawl.")
             break
         
-        node = queue.popleft()
+        try:
+            node: Node = queue.get()
+        except Empty:
+            print("Queue is empty, stopping crawl.")
+            break
+        
+        with lock:    
+            if node.link in visited:
+                continue
+            visited.add(node.link)
 
-        if node.link in visited:
-            continue
-
-        visited.add(node.link)
         visited_links.append(node.link)
         pages_crawled += 1
         
@@ -38,12 +47,9 @@ def bfs(start: Node, duration: int):
 
         # Add neighbors to queue if not visited
         for neighbor in neighbors:
-            if neighbor.link not in visited:
-                queue.append(neighbor)
-            G.add_edge(link, neighbor.link)
-
-    # Save graph
-    nx.write_graphml(G, "dlsu_crawl.graphml")
-    print("✅ Graph saved as 'dlsu_crawl.graphml'")
+            with lock:
+                if neighbor.link not in visited:
+                    queue.put(neighbor)
+                G.add_edge(link, neighbor.link)
 
     return visited_links, G

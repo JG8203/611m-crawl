@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from node import Node
+from typing import List, Tuple
 
 
 def fetch_page(node: Node):
@@ -12,7 +13,7 @@ def fetch_page(node: Node):
         soup = BeautifulSoup(resp.text, "html.parser")
         a_elements = soup.find_all("a", href=True)
 
-        neighbors = []
+        neighbors: List[Node] = []
         for a in a_elements:
             normalized = Node.normalize(a['href'], base=node.link)
             if "dlsu.edu.ph" not in urlparse(normalized).netloc:
