@@ -53,7 +53,7 @@ def main():
     
     scraper_threads = []
     
-    for _ in range(scraper_thread_count):
+    for i in range(scraper_thread_count):
         thread = threading.Thread(target=url_processor_worker, args=(url_queue, visited, lock, crawled_urls_data, crawl_duration_minutes))
         thread.start()
         scraper_threads.append(thread)

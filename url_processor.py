@@ -10,9 +10,8 @@ from node import URLNode
 def url_processor_worker(url_queue: Queue, visited: set, lock: threading.Lock, processed_urls_data: list, processing_duration_minutes: int):
     processing_duration_seconds = processing_duration_minutes * 60  
     start_time = time.time()
-    
+
     while True:
-        
         if time.time() - start_time > processing_duration_seconds:
             print("Time limit reached for url processor worker, stopping.")
             break
