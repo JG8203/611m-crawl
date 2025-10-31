@@ -14,17 +14,19 @@ def write_crawled_urls_to_csv(crawled_urls_data, filename="crawled_urls.csv"):
         writer.writeheader()
         writer.writerows(crawled_urls_data)
 
-def write_stats_to_txt(graph, filename="metadata.txt"):
-    num_pages = graph.number_of_nodes()
+def write_stats_to_txt(graph, visited_urls, filename="metadata.txt"):
+    num_discovered_pages = graph.number_of_nodes()
+    num_visited_pages = len(visited_urls)
     num_links = graph.number_of_edges()
 
     with open(filename, mode='w', encoding='utf-8') as file:
-        file.write(f"Total pages crawled: {num_pages}\n")
-        file.write(f"Total visited links: {num_links}\n")
+        file.write(f"Total pages discovered: {num_discovered_pages}\n")
+        file.write(f"Total pages visited: {num_visited_pages}\n")
+        file.write(f"Total links found: {num_links}\n")
         file.write("\nVisited URLs:\n")
 
-        for node in graph.nodes():
-            file.write(f"- {node}\n")
+        for url in visited_urls:
+            file.write(f"- {url}\n")
 
     print(f"Stats written to '{filename}'")
 
@@ -67,7 +69,7 @@ def main():
     write_crawled_urls_to_csv(crawled_urls_data)
     print("Crawled URLs saved to 'crawled_urls.csv'")
    
-    write_stats_to_txt(graph)
+    write_stats_to_txt(graph, visited)
 
 if __name__ == "__main__":
     main()
