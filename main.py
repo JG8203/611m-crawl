@@ -32,7 +32,7 @@ def write_stats_to_txt(graph, visited_urls, filename="metadata.txt"):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run_minutes", '-t', help="Specifies worker time.", type=float, default=None)
+    parser.add_argument("--run_minutes", '-t', help="Specifies worker time.", type=float, default=9999999)
     parser.add_argument("--num_threads", '-n', help="Number of threads used for scraping.", type=int, default=4)
     args = parser.parse_args()
 
