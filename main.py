@@ -1,68 +1,73 @@
-from node import Node
+from node import URLNode
 from bfs import bfs
 import threading
 from queue import Queue
 import networkx as nx
-from metadata_scraper import metadata_worker
+from url_processor import url_processor_worker
 import csv
+import argparse
 
-def write_metadata_to_csv(results, filename="metadata_results.csv"):
-    keys = results[0].keys() if results else []
+def write_crawled_urls_to_csv(crawled_urls_data, filename="crawled_urls.csv"):
+    keys = crawled_urls_data[0].keys() if crawled_urls_data else []
     with open(filename, mode='w', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=keys)
         writer.writeheader()
-        writer.writerows(results)
+        writer.writerows(crawled_urls_data)
 
-# TODO: Write no. of pages crawled, no. visited links, and all visited urls to text file
+def write_stats_to_txt(graph, filename="metadata.txt"):
+    num_pages = graph.number_of_nodes()
+    num_links = graph.number_of_edges()
 
+    with open(filename, mode='w', encoding='utf-8') as file:
+        file.write(f"Total pages crawled: {num_pages}\n")
+        file.write(f"Total visited links: {num_links}\n")
+        file.write("\nVisited URLs:\n")
+
+        for node in graph.nodes():
+            file.write(f"- {node}\n")
+
+    print(f"Stats written to '{filename}'")
 
 def main():
-    
-    #Define the website to be scraped
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run_minutes", '-t', help="Specifies worker time.", type=float, default=None)
+    parser.add_argument("--num_threads", '-n', help="Number of threads used for scraping.", type=int, default=4)
+    args = parser.parse_args()
+
     start_url = "https://www.dlsu.edu.ph"
-    start_node = Node(start_url)
+    start_node = URLNode(start_url)
     
     lock = threading.Lock()
     url_queue = Queue()
     graph = nx.DiGraph()
     visited = set()
-    results = []
+    crawled_urls_data = []
     
-    #TODO: Get user input for duration and max number of threads
+    crawl_duration_minutes = args.run_minutes
+    scraper_thread_count = args.num_threads 
     
-    #DEBUG: Fixed runtime and threads for testing
-    run_minutes = 1  # Change runtime here
-    num_threads = 4  # Change number of threads here
+    crawler_thread = threading.Thread(target=bfs, args=(start_node, crawl_duration_minutes, url_queue, lock, graph, visited))
+    crawler_thread.start()
     
-    #Start BFS crawl
-    BFS_thread = threading.Thread(target=bfs, args=(start_node, run_minutes, url_queue, lock, graph, visited))
-    BFS_thread.start()
+    scraper_threads = []
     
-    #Create and start threads for metadata scraping
-    metadata_threads = []
+    for _ in range(scraper_thread_count):
+        thread = threading.Thread(target=url_processor_worker, args=(url_queue, visited, lock, crawled_urls_data, crawl_duration_minutes))
+        thread.start()
+        scraper_threads.append(thread)
     
-    for _ in range(num_threads):
-        #DEBUG
-        #print("Starting metadata worker thread")
-        t = threading.Thread(target=metadata_worker, args=(url_queue, visited, lock, results, run_minutes))
-        t.start()
-        metadata_threads.append(t)
+    crawler_thread.join()
     
-    BFS_thread.join()
+    for thread in scraper_threads:
+        thread.join()
     
-    for t in metadata_threads:
-        t.join()
-    
-    # Save graph
     nx.write_graphml(graph, "dlsu_crawl.graphml")
-    print("✅ Graph saved as 'dlsu_crawl.graphml'")
+    print("Graph saved as 'dlsu_crawl.graphml'")
     
-    #Write metadata results to csv file
-    write_metadata_to_csv(results)
-    print("✅ Metadata results saved to 'metadata_results.csv'")
-    
-    # TODO: Write to text file
-    
-    
+    write_crawled_urls_to_csv(crawled_urls_data)
+    print("Crawled URLs saved to 'crawled_urls.csv'")
+   
+    write_stats_to_txt(graph)
+
 if __name__ == "__main__":
     main()

@@ -1,54 +1,47 @@
 from collections import deque
 import time
 import networkx as nx
-from node import Node
-from fetch import fetch_page
+from node import URLNode
+from fetch import fetch_page_and_extract_links
 from queue import Queue, Empty
 import threading
 
-def bfs(start: Node, duration: int, queue : Queue, lock: threading.Lock, graph: nx.DiGraph, visited: set):
-    #visited = set()
-    #queue = deque([start])
+def bfs(start_node: URLNode, crawl_duration_minutes: int, url_queue : Queue, lock: threading.Lock, graph: nx.DiGraph, visited: set):
     visited_links = []
     pages_crawled = 0
     
-    # Handle duration
-    run_time = duration * 60  
+    crawl_duration_seconds = crawl_duration_minutes * 60  
     start_time = time.time()
     
-    queue.put(start)
+    url_queue.put(start_node)
 
     while True:
         
-        if time.time() - start_time > run_time:
+        if time.time() - start_time > crawl_duration_seconds:
             print("Time limit reached, stopping crawl.")
             break
         
         try:
-            node: Node = queue.get()
+            current_node: URLNode = url_queue.get()
         except Empty:
             print("Queue is empty, stopping crawl.")
             break
         
         with lock:    
-            if node.link in visited:
+            if current_node.url in visited:
                 continue
-            visited.add(node.link)
+            visited.add(current_node.url)
 
-        visited_links.append(node.link)
+        visited_links.append(current_node.url)
         pages_crawled += 1
         
-        #DEBUG Print statement
-        print(f"Crawled ({pages_crawled}): {node.link}")
+        print(f"Crawled ({pages_crawled}): {current_node.url}")
 
-        # Fetch page and get neighbors
-        link, neighbors = fetch_page(node)
-
-        # Add neighbors to queue if not visited
-        for neighbor in neighbors:
+        current_url, neighbor_nodes = fetch_page_and_extract_links(current_node)
+        for neighbor_node in neighbor_nodes:
             with lock:
-                if neighbor.link not in visited:
-                    queue.put(neighbor)
-                graph.add_edge(link, neighbor.link)
+                if neighbor_node.url not in visited:
+                    url_queue.put(neighbor_node)
+                graph.add_edge(current_url, neighbor_node.url)
 
     return visited_links, graph

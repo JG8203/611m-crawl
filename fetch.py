@@ -1,26 +1,25 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-from node import Node
+from node import URLNode
 from typing import List
 
 
-def fetch_page(node: Node):
-    """Fetch page and extract links within the same domain."""
+def fetch_page_and_extract_links(url_node: URLNode):
     try:
-        resp = requests.get(node.link, timeout=5)
-        resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "html.parser")
-        a_elements = soup.find_all("a", href=True)
+        response = requests.get(url_node.url, timeout=5)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+        link_elements = soup.find_all("a", href=True)
 
-        neighbors: List[Node] = []
-        for a in a_elements:
-            normalized = Node.normalize(a['href'], base=node.link)
-            if "dlsu.edu.ph" not in urlparse(normalized).netloc:
+        neighbor_nodes: List[URLNode] = []
+        for link_element in link_elements:
+            normalized_url = URLNode.normalize_url(link_element['href'], base=url_node.url)
+            if "dlsu.edu.ph" not in urlparse(normalized_url).netloc:
                 continue
-            neighbors.append(Node(normalized))
+            neighbor_nodes.append(URLNode(normalized_url))
 
-        return node.link, neighbors
+        return url_node.url, neighbor_nodes
     except Exception as e:
-        print(f"Failed: {node.link} -> {e}")
-        return node.link, []
+        print(f"Failed: {url_node.url} -> {e}")
+        return url_node.url, []
