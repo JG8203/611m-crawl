@@ -22,7 +22,7 @@ def bfs(start_node: URLNode, crawl_duration_minutes: int, url_queue : Queue, loc
             break
         
         try:
-            current_node: URLNode = url_queue.get()
+            current_node: URLNode = url_queue.get(timeout=1)
         except Empty:
             print("Queue is empty, stopping crawl.")
             break

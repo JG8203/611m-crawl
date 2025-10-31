@@ -34,9 +34,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_minutes", '-t', help="Specifies worker time.", type=float, default=9999999)
     parser.add_argument("--num_threads", '-n', help="Number of threads used for scraping.", type=int, default=4)
+    parser.add_argument("--url", '-u', help="Specifies URL to scrape.", type=str, default="http://www.dlsu.edu.ph")
     args = parser.parse_args()
 
-    start_url = "https://www.dlsu.edu.ph"
+    start_url = args.url
     start_node = URLNode(start_url)
     
     lock = threading.Lock()
@@ -59,6 +60,9 @@ def main():
         scraper_threads.append(thread)
     
     crawler_thread.join()
+
+    for i in range(scraper_thread_count):
+        url_queue.put(None)
     
     for thread in scraper_threads:
         thread.join()

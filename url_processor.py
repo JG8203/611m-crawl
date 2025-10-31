@@ -17,8 +17,11 @@ def url_processor_worker(url_queue: Queue, visited: set, lock: threading.Lock, p
             break
         try:
             url_node: URLNode = url_queue.get(timeout=5)
+            if url_node is None:
+                break
         except Empty:
-            continue
+            print("Queue is empty, stopping crawl.")
+            break
         
         page_url = url_node.url
         with lock:
