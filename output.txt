@@ -1,0 +1,264 @@
+from collections import deque
+import time
+import networkx as nx
+from node import URLNode
+from fetch import fetch_page_and_extract_links
+from queue import Queue, Empty
+import threading
+
+def bfs(start_node: URLNode, crawl_duration_minutes: int, url_queue : Queue, lock: threading.Lock, graph: nx.DiGraph, visited: set):
+    visited_links = []
+    pages_crawled = 0
+    
+    crawl_duration_seconds = crawl_duration_minutes * 60  
+    start_time = time.time()
+    
+    url_queue.put(start_node)
+
+    while True:
+        
+        if time.time() - start_time > crawl_duration_seconds:
+            print("Time limit reached, stopping crawl.")
+            break
+        
+        try:
+            current_node: URLNode = url_queue.get(timeout=1)
+        except Empty:
+            print("Queue is empty, stopping crawl.")
+            break
+        
+        with lock:    
+            if current_node.url in visited:
+                continue
+            visited.add(current_node.url)
+
+        visited_links.append(current_node.url)
+        pages_crawled += 1
+        
+        print(f"Crawled ({pages_crawled}): {current_node.url}")
+
+        current_url, neighbor_nodes = fetch_page_and_extract_links(current_node)
+        for neighbor_node in neighbor_nodes:
+            with lock:
+                if neighbor_node.url not in visited:
+                    url_queue.put(neighbor_node)
+                graph.add_edge(current_url, neighbor_node.url)
+
+    return visited_links, graph
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+from node import URLNode
+from typing import List
+
+
+def fetch_page_and_extract_links(url_node: URLNode):
+    try:
+        response = requests.get(url_node.url, timeout=5)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+        link_elements = soup.find_all("a", href=True)
+
+        neighbor_nodes: List[URLNode] = []
+        for link_element in link_elements:
+            normalized_url = URLNode.normalize_url(link_element['href'], base=url_node.url)
+            if "dlsu.edu.ph" not in urlparse(normalized_url).netloc:
+                continue
+            neighbor_nodes.append(URLNode(normalized_url))
+
+        return url_node.url, neighbor_nodes
+    except Exception as e:
+        print(f"Failed: {url_node.url} -> {e}")
+        return url_node.url, []
+from node import URLNode
+from bfs import bfs
+import threading
+from queue import Queue
+import networkx as nx
+from url_processor import url_processor_worker
+import csv
+import argparse
+
+def write_crawled_urls_to_csv(crawled_urls_data, filename="crawled_urls.csv"):
+    keys = crawled_urls_data[0].keys() if crawled_urls_data else []
+    with open(filename, mode='w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=keys)
+        writer.writeheader()
+        writer.writerows(crawled_urls_data)
+
+def write_stats_to_txt(graph, visited_urls, filename="metadata.txt"):
+    num_discovered_pages = graph.number_of_nodes()
+    num_visited_pages = len(visited_urls)
+    num_links = graph.number_of_edges()
+
+    with open(filename, mode='w', encoding='utf-8') as file:
+        file.write(f"Total pages discovered: {num_discovered_pages}\n")
+        file.write(f"Total pages visited: {num_visited_pages}\n")
+        file.write(f"Total links found: {num_links}\n")
+        file.write("\nVisited URLs:\n")
+
+        for url in visited_urls:
+            file.write(f"- {url}\n")
+
+    print(f"Stats written to '{filename}'")
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run_minutes", '-t', help="Specifies worker time.", type=float, default=9999999)
+    parser.add_argument("--num_threads", '-n', help="Number of threads used for scraping.", type=int, default=4)
+    parser.add_argument("--url", '-u', help="Specifies URL to scrape.", type=str, default="http://www.dlsu.edu.ph")
+    args = parser.parse_args()
+
+    start_url = args.url
+    start_node = URLNode(start_url)
+    
+    lock = threading.Lock()
+    url_queue = Queue()
+    graph = nx.DiGraph()
+    visited = set()
+    crawled_urls_data = []
+    
+    crawl_duration_minutes = args.run_minutes
+    scraper_thread_count = args.num_threads 
+    
+    crawler_thread = threading.Thread(target=bfs, args=(start_node, crawl_duration_minutes, url_queue, lock, graph, visited))
+    crawler_thread.start()
+    
+    scraper_threads = []
+    
+    for i in range(scraper_thread_count):
+        thread = threading.Thread(target=url_processor_worker, args=(url_queue, visited, lock, crawled_urls_data, crawl_duration_minutes))
+        thread.start()
+        scraper_threads.append(thread)
+    
+    crawler_thread.join()
+
+    for i in range(scraper_thread_count):
+        url_queue.put(None)
+    
+    for thread in scraper_threads:
+        thread.join()
+    
+    nx.write_graphml(graph, "dlsu_crawl.graphml")
+    print("Graph saved as 'dlsu_crawl.graphml'")
+    
+    write_crawled_urls_to_csv(crawled_urls_data)
+    print("Crawled URLs saved to 'crawled_urls.csv'")
+   
+    write_stats_to_txt(graph, visited)
+
+if __name__ == "__main__":
+    main()
+from urllib.parse import urljoin, urldefrag, urlparse, urlunparse
+
+class URLNode:
+    def __init__(self, url: str, neighbor_nodes=None, base: str = None):
+        self.url = self.normalize_url(url, base)
+        self.neighbor_nodes = neighbor_nodes or []
+
+    @staticmethod
+    def normalize_url(url: str, base: str = None) -> str:
+        if not url:
+            return ""
+        if base:
+            url = urljoin(base, url)
+        url, _ = urldefrag(url)
+        parsed = urlparse(url)
+        scheme = (parsed.scheme or "http").lower()
+        netloc = parsed.netloc.lower()
+        path = parsed.path or "/"
+        return urlunparse((scheme, netloc, path, parsed.params, parsed.query, ""))
+
+    def __hash__(self):
+        return hash(self.url)
+
+    def __eq__(self, other):
+        return isinstance(other, URLNode) and self.url == other.url
+
+    def __repr__(self) -> str:
+        return f"URLNode({self.url!r})"
+from bs4 import BeautifulSoup, Tag
+from typing import Dict
+import requests
+import time
+import threading
+from queue import Queue, Empty
+import networkx as nx
+from node import URLNode
+
+def url_processor_worker(url_queue: Queue, visited: set, lock: threading.Lock, processed_urls_data: list, processing_duration_minutes: int):
+    processing_duration_seconds = processing_duration_minutes * 60  
+    start_time = time.time()
+
+    while True:
+        if time.time() - start_time > processing_duration_seconds:
+            print("Time limit reached for url processor worker, stopping.")
+            break
+        try:
+            url_node: URLNode = url_queue.get(timeout=5)
+            if url_node is None:
+                break
+        except Empty:
+            print("Queue is empty, stopping crawl.")
+            break
+        
+        page_url = url_node.url
+        with lock:
+            if page_url in visited:
+                continue
+            visited.add(page_url)
+            
+        extracted_data = extract_url_data(page_url)
+        
+        with lock:
+            processed_urls_data.append(extracted_data)
+
+def extract_url_data(page_url: str) -> Dict[str, str]:
+    try:
+        response = requests.get(page_url, timeout=5)
+        response.raise_for_status()
+        beautiful_soup: BeautifulSoup = BeautifulSoup(response.text, "html.parser")
+
+        page_title: str = ""
+        if isinstance(beautiful_soup.title, Tag) and beautiful_soup.title.string:
+            page_title = beautiful_soup.title.string.strip()
+        else:
+            page_title = "No Title"
+
+        page_meta_description: str = "None"
+        description_meta_tag: Tag | None = beautiful_soup.find("meta", attrs={"name": "description"})
+        if description_meta_tag and "content" in description_meta_tag.attrs:
+            page_meta_description = description_meta_tag["content"].strip()
+
+        return {
+            "url": page_url,
+            "title": page_title,
+            "meta_description": page_meta_description
+        }
+
+    except Exception as e:
+        return {
+            "url": page_url,
+            "title": "Error",
+            "meta_description": "None"
+        }
+.
+├── __pycache__
+│   ├── bfs.cpython-313.pyc
+│   ├── fetch.cpython-313.pyc
+│   ├── node.cpython-313.pyc
+│   └── url_processor.cpython-313.pyc
+├── bfs.py
+├── crawled_urls.csv
+├── dlsu_crawl.graphml
+├── fetch.py
+├── main.py
+├── metadata_results.csv
+├── metadata.txt
+├── node.py
+├── output.txt
+├── poetry.lock
+├── pyproject.toml
+└── url_processor.py
+
+2 directories, 16 files

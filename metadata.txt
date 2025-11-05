@@ -1,6 +1,0 @@
-Total pages discovered: 0
-Total pages visited: 1
-Total links found: 0
-
-Visited URLs:
-- https://web-scraping.dev/docs

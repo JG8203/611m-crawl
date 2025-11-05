@@ -1,0 +1,11 @@
+Starting crawl of http://www.dlsu.edu.ph for 2.0 minutes with 1 threads.
+
+Time limit reached (2.0 minutes). Signaling threads to stop...
+All threads have stopped.
+Graph saved as 'dlsu_crawl.graphml'
+Crawled URLs saved to 'crawled_urls.csv'
+Stats written to 'metadata.txt'
+
+Crawl complete in 120.32 seconds.
+Total pages visited: 3112
+Total links found: 35224
