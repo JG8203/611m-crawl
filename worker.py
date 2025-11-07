@@ -1,6 +1,5 @@
 import requests
 import threading
-import time
 from queue import Queue, Empty
 from bs4 import BeautifulSoup, Tag
 from typing import List, Dict, Tuple, Optional

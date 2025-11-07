@@ -4,7 +4,6 @@ import requests
 import time
 import threading
 from queue import Queue, Empty
-import networkx as nx
 from node import URLNode
 
 def url_processor_worker(url_queue: Queue, visited: set, lock: threading.Lock, processed_urls_data: list, processing_duration_minutes: int):
