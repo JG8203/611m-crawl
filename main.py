@@ -6,7 +6,7 @@ import argparse
 import csv
 
 from node import URLNode
-from worker import worker # Import the new worker function
+from worker import worker
 
 def write_crawled_urls_to_csv(crawled_urls_data, filename="crawled_urls.csv"):
     """Writes the final scraped data to a CSV file."""
@@ -24,7 +24,7 @@ def write_crawled_urls_to_csv(crawled_urls_data, filename="crawled_urls.csv"):
 def write_stats_to_txt(graph, filename="metadata.txt"):
     """Writes the crawl statistics to a text file."""
     num_discovered_pages = graph.number_of_nodes()
-    num_visited_pages = num_discovered_pages # In this model, discovered == visited
+    num_visited_pages = num_discovered_pages 
     num_links = graph.number_of_edges()
 
     with open(filename, mode='w', encoding='utf-8') as file:
@@ -33,7 +33,6 @@ def write_stats_to_txt(graph, filename="metadata.txt"):
         file.write(f"Total links found: {num_links}\n")
         file.write("\nVisited URLs:\n")
 
-        # Sort nodes for consistent output
         for url in sorted(list(graph.nodes())):
             file.write(f"- {url}\n")
 
@@ -48,20 +47,13 @@ def main():
 
     print(f"Starting crawl of {args.url} for {args.run_minutes} minutes with {args.num_threads} threads.")
 
-    # --- Shared Resources ---
     url_queue = Queue()
     visited = set()
     graph = nx.DiGraph()
-    crawled_urls_data = [] # This will hold our final CSV data
+    crawled_urls_data = [] 
 
-    # --- Fine-Grained Locks ---
-    # Lock for protecting shared topology (graph and visited set)
     topology_lock = threading.Lock()
-    # Lock for protecting the final results list
     data_lock = threading.Lock()
-
-    # --- Shutdown Signal ---
-    # An Event is a thread-safe flag to signal threads to stop
     stop_event = threading.Event()
 
     # --- Initialization ---
@@ -73,7 +65,6 @@ def main():
     # --- Start Worker Threads ---
     threads = []
     for _ in range(args.num_threads):
-        # Pass all shared resources to the worker
         thread = threading.Thread(
             target=worker,
             args=(
@@ -89,19 +80,15 @@ def main():
         thread.start()
         threads.append(thread)
 
-    # --- Run for specified duration ---
     crawl_duration_seconds = args.run_minutes * 60
     start_time = time.time()
     try:
-        # Let the threads run for the specified duration
         time.sleep(crawl_duration_seconds)
     except KeyboardInterrupt:
         print("\nCaught KeyboardInterrupt, stopping crawl...")
     
     print(f"\nTime limit reached ({args.run_minutes} minutes). Signaling threads to stop...")
     
-    # --- Shutdown ---
-    # Set the event to signal all threads to stop their loops
     stop_event.set()
 
     # Wait for all threads to finish
