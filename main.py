@@ -1,7 +1,7 @@
 import threading
 import time
 import networkx as nx
-from queue import Queue, Empty
+from queue import Queue
 import argparse
 import csv
 
