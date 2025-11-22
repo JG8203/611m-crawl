@@ -39,9 +39,9 @@ def write_stats_to_txt(graph, filename="metadata.txt"):
     print(f"Stats written to '{filename}'")
 
 def main():
-    parser = argparse.ArgumentParser(description="Parallel Web Scraper")
+    parser = argparse.ArgumentParser(description="Distributed System Web Scraper")
     parser.add_argument("--run_minutes", '-t', help="Specifies worker time.", type=float, default=1.0)
-    parser.add_argument("--num_threads", '-n', help="Number of threads used for scraping.", type=int, default=4)
+    parser.add_argument("--num_threads", '-n', help="Number of nodes used for scraping.", type=int, default=4)
     parser.add_argument("--url", '-u', help="Specifies URL to scrape.", type=str, default="http://www.dlsu.edu.ph")
     args = parser.parse_args()
 
