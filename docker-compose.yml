@@ -1,0 +1,16 @@
+services:
+  coordinator:
+    build: .
+    container_name: crawler-coordinator-bs
+    command: python run_server.py -u http://www.dlsu.edu.ph -t ${CRAWL_MINUTES:-2} -H 0.0.0.0 -p 9999 -o /output
+    ports:
+      - "9999:9999"
+    volumes:
+      - ./output:/output
+
+  worker:
+    build: .
+    command: ["python", "-u", "run_client.py", "-H", "coordinator", "-p", "9999", "-d", "3"]
+    depends_on:
+      - coordinator
+    restart: on-failure
