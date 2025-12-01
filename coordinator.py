@@ -34,16 +34,12 @@ class Coordinator:
         """
         new_count = 0
         with self._lock:
-            # Store extracted page data
             if data:
                 self._data.append(data)
 
-            # Process neighbor URLs
             for url in neighbor_urls:
-                # Add edge to graph
                 self._graph.add_edge(source_url, url)
-
-                # Add to queue if not visited
+                
                 if url not in self._visited:
                     self._visited.add(url)
                     self._queue.append(url)

@@ -119,12 +119,12 @@ The coordinator is implemented as a Pyro5-exposed class that manages all shared 
 @Pyro5.api.expose
 class Coordinator:
     def __init__(self, seed_url: str):
-        self._queue: list[str] = [seed_url]      # URLs to crawl
-        self._visited: set[str] = {seed_url}      # Already seen URLs
-        self._graph = nx.DiGraph()                 # Link topology
-        self._data: list[dict] = []               # Extracted metadata
-        self._stop = False                         # Stop signal
-        self._lock = threading.Lock()             # Thread safety
+        self._queue: list[str] = [seed_url]     
+        self._visited: set[str] = {seed_url}   
+        self._graph = nx.DiGraph()            
+        self._data: list[dict] = []             
+        self._stop = False                
+        self._lock = threading.Lock()            
 ```
 
 **Key Methods:**

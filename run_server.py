@@ -47,17 +47,14 @@ def main():
     parser.add_argument("--output", "-o", help="Output directory for results.", type=str, default=".")
     args = parser.parse_args()
 
-    # Ensure output directory exists
     os.makedirs(args.output, exist_ok=True)
 
-    # Normalize the seed URL
     seed_url = URLNode(args.url).url
 
     print(f"Starting coordinator server for crawl of {seed_url}")
     print(f"Crawl duration: {args.run_minutes} minutes")
     print(f"Server: {args.host}:{args.port}")
 
-    # Create coordinator instance
     coordinator = Coordinator(seed_url)
 
     # Create Pyro daemon
@@ -94,10 +91,8 @@ def main():
 
     print(f"\n\nTime limit reached ({args.run_minutes} minutes). Stopping...")
 
-    # Signal workers to stop
     coordinator.stop()
 
-    # Give workers time to finish current tasks
     time.sleep(2)
 
     # Get final results

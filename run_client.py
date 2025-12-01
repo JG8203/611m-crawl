@@ -27,7 +27,7 @@ def main():
     parser.add_argument("--delay", "-d", help="Startup delay in seconds.", type=float, default=0)
     args = parser.parse_args()
 
-    # Startup delay (useful for Docker)
+    # Startup delay
     if args.delay > 0:
         print(f"Waiting {args.delay}s before starting...", flush=True)
         time.sleep(args.delay)
